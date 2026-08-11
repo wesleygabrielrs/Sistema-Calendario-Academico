@@ -56,18 +56,19 @@ body {
 /* ---------- Topo ---------- */
 .topo {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
+    justify-content: center;
     gap: 8px;
-    padding: 14px 22px;
+    padding: 16px 22px 14px;
     background: var(--superficie);
     border-bottom: 1px solid var(--borda);
 }
 
 .topo h1 {
     margin: 0;
-    font-size: 1.15rem;
+    font-size: 1.3rem;
+    text-align: center;
 }
 
 .topo nav {
@@ -90,14 +91,18 @@ body {
 
 /* ---------- Conteudo ---------- */
 .conteudo {
-    max-width: 1100px;
+    max-width: 700px;
     margin: 0 auto;
     padding: 20px 22px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .barra-acoes {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 14px;
     margin-bottom: 18px;
     flex-wrap: wrap;

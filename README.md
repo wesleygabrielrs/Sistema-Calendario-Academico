@@ -13,6 +13,7 @@ A versão em inglês está logo abaixo / *English version below.*
 
 - **Login por link mágico** do portal (sem senha) — o app segue o link recebido no Gmail e captura o token de acesso
 - **Sincronização por matéria**: percorre o calendário de cada disciplina (aulas, provas, trabalhos, prazos)
+- **AOLs automáticas**: as avaliações online (nota 0–10 por unidade) são detectadas e agendadas como evento de **dia inteiro no prazo final** de entrega
 - **Espelha tudo no Google Agenda** via Calendar API, numa agenda **UNINASSAU** com uma cor por matéria
 - **Sem duplicar**: eventos alterados são atualizados; eventos que sumiram do portal são removidos da agenda
 - **Preserva o que você cria à mão** no Google — eventos não criados pelo app não são apagados
@@ -32,8 +33,9 @@ O portal acadêmico não expõe um calendário agregado: cada matéria é acessa
 
 1. Captura o **token de acesso** pelo link mágico (SSO)
 2. Para cada disciplina configurada, busca os calendários `bookings`, `assessments`, `academic` e `terms` mês a mês
-3. Normaliza os eventos (nome curto da disciplina, datas *all-day* corrigidas) e grava no SQLite **sem duplicar**
-4. Espelha tudo no **Google Agenda** com *id* determinístico — o mesmo dado gera o mesmo evento, então a sincronização é idempotente
+3. **AOLs**: as avaliações online ficam numa plataforma parceira (Prova Fácil) — o app gera o SSO, obtém o token do candidato e busca as provas disponíveis com o prazo final (`end_date`) numa única chamada que cobre todas as matérias
+4. Normaliza os eventos (nome curto da disciplina, datas *all-day* corrigidas) e grava no SQLite **sem duplicar**
+5. Espelha tudo no **Google Agenda** com *id* determinístico — o mesmo dado gera o mesmo evento, então a sincronização é idempotente
 
 ## 📸 Screenshot
 
@@ -119,6 +121,7 @@ A personal **Python + Flask** tool that solves a real problem with the **UNINASS
 
 - **Magic-link login** to the portal (no password) — the app follows the email link and captures the access token
 - **Per-subject sync**: walks each discipline's calendar (classes, exams, assignments, deadlines)
+- **Automatic AOLs**: online assessments (0–10 per unit) are detected and scheduled as an **all-day event on the due date**
 - **Mirrors everything to Google Calendar** via the Calendar API, in a **UNINASSAU** calendar with one color per subject
 - **No duplicates**: changed events are updated; events that vanish from the portal are removed
 - **Keeps your manual Google events** — anything not created by the app is left alone
@@ -138,8 +141,9 @@ The portal exposes no aggregated calendar: each subject is accessed through a `u
 
 1. Captures the **access token** through the magic-link SSO flow
 2. For each configured subject, fetches the `bookings`, `assessments`, `academic` and `terms` calendars month by month
-3. Normalizes events (short subject name, fixed all-day dates) and stores them in SQLite **without duplicating**
-4. Mirrors everything into **Google Calendar** using a deterministic id — the same data yields the same event, so sync is idempotent
+3. **AOLs**: online assessments live on a partner platform (Prova Fácil) — the app runs the SSO, obtains the candidate token and fetches the available tests with their due date (`end_date`) in a single call covering all subjects
+4. Normalizes events (short subject name, fixed all-day dates) and stores them in SQLite **without duplicating**
+5. Mirrors everything into **Google Calendar** using a deterministic id — the same data yields the same event, so sync is idempotent
 
 ## 🚀 Getting started
 

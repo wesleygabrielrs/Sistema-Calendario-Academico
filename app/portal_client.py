@@ -16,6 +16,7 @@ import datetime
 import json
 import re
 import time
+import urllib.parse
 
 import requests
 
@@ -23,6 +24,13 @@ BASE_URL = "https://serconnect.sereducacional.com"
 API_URL = BASE_URL + "/api/resources"
 AUTH_ME_URL = API_URL + "/auth/me"
 CALENDAR_URL = API_URL + "/student/content/calendar/{tipo}"
+
+# AOLs (avaliacoes online, nota 0-10 por unidade) ficam na plataforma
+# "Prova Facil". O portal so fornece o nome/uuid e o SSO; a lista com os
+# prazos reais (end_date) mora na API da Prova Facil (descoberto na Etapa 0).
+PROVAFACIL_ASSESSMENTS_URL = API_URL + "/student/content/sso/prova-facil/assessments"
+PROVAFACIL_SSO_URL = API_URL + "/student/content/sso/prova-facil"
+PROVAFACIL_ONLINE_TESTS = "api/v2/ot/online-tests/"
 
 # Endpoints de calendario que agregam a agenda do periodo.
 TIPOS_CALENDARIO = ("bookings", "assessments", "academic", "terms")
@@ -238,6 +246,121 @@ class PortalClient:
             "raw_json": json.dumps(evento, ensure_ascii=False),
         }
 
+
+    # AOLs (avaliacoes online) - Prova Facil
+
+    def _primeiro_item_aol(self):
+        """Devolve o uuid de uma AOL qualquer (para gerar o SSO da Prova Facil)."""
+        for disciplina in self.disciplinas:
+            uuid = (disciplina.get("uuid") or "").strip()
+            if not uuid:
+                continue
+            self._set_disciplina(uuid)
+            try:
+                resp = self.session.get(PROVAFACIL_ASSESSMENTS_URL, timeout=30)
+            except requests.RequestException:
+                continue
+            if resp.status_code != 200:
+                continue
+            for aol in resp.json().get("result") or []:
+                if aol.get("uuid"):
+                    return aol["uuid"]
+            time.sleep(PAUSA_SEGUNDOS)
+        return ""
+
+    def _candidate_token(self, item_uuid):
+        """Gera o candidate_token da Prova Facil via SSO de uma AOL.
+
+        Devolve (token, origin). O token e do candidato (nao da materia),
+        entao uma chamada cobre as AOLs de todas as materias.
+        """
+        try:
+            resp = self.session.get(
+                PROVAFACIL_SSO_URL, params={"item_uuid": item_uuid}, timeout=30
+            )
+            if resp.status_code != 200:
+                return "", ""
+            url = (resp.json().get("result") or {}).get("url") or ""
+            if not url:
+                return "", ""
+            final = self.session.get(url, timeout=30, allow_redirects=True)
+            tok = re.search(r"candidate_token=([A-Za-z0-9]+)", final.url)
+            orig = re.search(r"origin=([^&]+)", final.url)
+            if not tok or not orig:
+                return "", ""
+            origin = urllib.parse.unquote(orig.group(1))
+            origin = origin.replace("\\", "/").replace("//", "/").rstrip("/")
+            return tok.group(1), origin
+        except requests.RequestException:
+            return "", ""
+
+    @staticmethod
+    def _normalizar_aol(item):
+        """Converte uma AOL da Prova Facil no formato de atividade do banco.
+
+        Agendamos o evento no DIA DO PRAZO (end_date) como dia inteiro.
+        """
+        agendamento = item.get("schedule") or {}
+        tipo_assessment = (agendamento.get("type_assessment") or {}).get("name") or ""
+        if not tipo_assessment:
+            return None
+        nome_materia = PortalClient.nome_curto(
+            item.get("module_name") or item.get("academic") or ""
+        )
+        if not nome_materia:
+            return None
+        prazo = item.get("end_date") or ""
+        if not prazo:
+            return None
+        raw = dict(item)
+        raw["is_all_day"] = True
+        return {
+            "materia": nome_materia,
+            "titulo": tipo_assessment,  # ex.: "AOL1"
+            "tipo": "AOL",
+            "data_inicio": prazo,
+            "data_fim": prazo,
+            "status": "",
+            "link": "",
+            "raw_json": json.dumps(raw, ensure_ascii=False),
+        }
+
+    def _buscar_aols(self):
+        """Busca as AOLs disponiveis (com prazo) na plataforma Prova Facil."""
+        if not self.disciplinas:
+            return []
+        item_uuid = self._primeiro_item_aol()
+        if not item_uuid:
+            return []
+        token, origin = self._candidate_token(item_uuid)
+        if not token or not origin:
+            return []
+        base = f"https://{origin}/"
+        try:
+            resp = self.session.get(
+                base + PROVAFACIL_ONLINE_TESTS,
+                headers={
+                    "Authorization": f"Token {token}",
+                    "Content-Type": "application/json",
+                },
+                timeout=30,
+            )
+        except requests.RequestException:
+            return []
+        if resp.status_code != 200:
+            self.ultimo_erro = (
+                f"Prova Facil nao listou as AOLs (status {resp.status_code})"
+            )
+            return []
+        dados = resp.json()
+        if not isinstance(dados, list):
+            return []
+        return [
+            atv
+            for atv in (self._normalizar_aol(item) for item in dados)
+            if atv is not None
+        ]
+
     def sincronizar(self):
         """Busca o calendario de cada disciplina e agrupa por materia.
 
@@ -302,5 +425,18 @@ class PortalClient:
                     "atividades": atividades,
                 }
             )
+
+        # AOLs (avaliacoes online): o candidate_token cobre todas as materias,
+        # entao uma chamada basta. Filtra apenas as disciplinas configuradas.
+        try:
+            aols = self._buscar_aols()
+        except Exception as exc:  # noqa: BLE001
+            resultado["erros"].append(f"AOLs: {exc}")
+            aols = []
+        materias_por_nome = {m["nome"]: m for m in resultado["materias"]}
+        for atv_aol in aols:
+            materia = materias_por_nome.get(atv_aol.pop("materia", ""))
+            if materia is not None:
+                materia["atividades"].append(atv_aol)
 
         return resultado

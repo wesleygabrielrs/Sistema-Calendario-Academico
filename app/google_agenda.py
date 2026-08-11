@@ -165,11 +165,7 @@ class GoogleAgenda:
         return corpo
 
     def sincronizar_eventos(self, atividades):
-        """Espelha as atividades do banco na agenda 'UNINASSAU'.
-
-        Devolve um dict com criados/atualizados/removidos e erros, ou None
-        se a agenda nao estiver pronta.
-        """
+        
         if not self.service or not self.calendario_id:
             self.ultimo_erro = "Google Agenda nao conectado."
             return None
@@ -227,7 +223,6 @@ class GoogleAgenda:
             except Exception as exc:
                 erros.append(f"{atv['titulo']}: {exc}")
 
-        # Remove do Google o que sumiu do portal (só eventos que criamos).
         for gid in existentes:
             if gid not in esperados and gid.startswith("uninassau"):
                 try:
@@ -236,7 +231,7 @@ class GoogleAgenda:
                     ).execute()
                     removidos += 1
                 except Exception:
-                    pass  # 404 etc.: não é problema
+                    pass  
 
         return {
             "criados": criados,
