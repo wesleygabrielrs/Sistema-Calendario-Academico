@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block titulo %}Conectar Google Agenda{% endblock %}
+
+{% block conteudo %}
+<h2>Conectar com o Google Agenda</h2>
+
+{% if erro %}
+<p class="aviso" style="border-color: var(--erro); color: var(--erro);">✖ {{ erro }}</p>
+{% endif %}
+
+<p class="aviso">
+    Para o app conseguir mandar seus eventos para o Google, você precisa criar um
+    <strong>credentials.json</strong> (uma única vez, ~10 minutos, gratuito).
+</p>
+
+<div class="etapa">
+    <span class="etapa-num">1</span>
+    <div class="etapa-conteudo">
+        <label>Acesse o Google Cloud Console</label>
+        <p class="status">Abra <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a> e entre com a sua conta do Google.</p>
+    </div>
+</div>
+
+<div class="etapa">
+    <span class="etapa-num">2</span>
+    <div class="etapa-conteudo">
+        <label>Crie um projeto</label>
+        <p class="status">No topo da página, clique em <strong>Selecionar um projeto</strong> → <strong>Novo projeto</strong> → dê um nome (ex.: <code>calendario-academico</code>) → <strong>Criar</strong>.</p>
+    </div>
+</div>
+
+<div class="etapa">
+    <span class="etapa-num">3</span>
+    <div class="etapa-conteudo">
+        <label>Habilite a Google Calendar API</label>
+        <p class="status">
+            Menu ☰ → <strong>APIs e serviços</strong> → <strong>Biblioteca</strong> → pesquise
+            <code>Google Calendar API</code> → clique → <strong>Ativar</strong>.
+        </p>
+    </div>
+</div>
+
+<div class="etapa">
+    <span class="etapa-num">4</span>
+    <div class="etapa-conteudo">
+        <label>Configure a tela de consentimento (primeira vez)</label>
+        <p class="status">
+            <strong>APIs e serviços</strong> → <strong>Tela de consentimento OAuth</strong> →
+            escolha <strong>Externo</strong> → preencha o nome do app (ex.: <code>Calendario UNINASSAU</code>)
+            e seu e-mail → salve. Nos passos de escopos e usuários de teste pode avançar direto.
+        </p>
+    </div>
+</div>
+
+<div class="etapa">
+    <span class="etapa-num">5</span>
+    <div class="etapa-conteudo">
+        <label>Crie o Client ID OAuth e baixe o JSON</label>
+        <p class="status">
+            <strong>APIs e serviços</strong> → <strong>Credenciais</strong> →
+            <strong>+ Criar credenciais</strong> → <strong>ID do cliente OAuth</strong> →
+            tipo <strong>Aplicativo para desktop</strong> → <strong>Criar</strong> →
+            no aviso que aparece, clique em <strong>Baixar JSON</strong>.
+        </p>
+    </div>
+</div>
+
+<div class="etapa">
+    <span class="etapa-num">6</span>
+    <div class="etapa-conteudo">
+        <label>Salve como <code>credentials.json</code> na pasta do projeto</label>
+        <p class="status">
+            Renomeie o arquivo baixado para <code>credentials.json</code> e coloque na pasta
+            <code>Calendario-Academico</code> (junto do <code>app.py</code>). Depois clique abaixo.
+        </p>
+        <div class="linha">
+            <a class="btn" href="{{ url_for('google_autorizar') }}">Já salvei — conectar agora</a>
+        </div>
+    </div>
+</div>
+
+<p class="aviso">
+    🔒 O <code>credentials.json</code> e o token gerado (<code>token.google.json</code>) são seus —
+    os dois estão no <code>.gitignore</code> e <strong>não</strong> vão para o GitHub.
+</p>
+{% endblock %}

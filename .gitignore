@@ -1,0 +1,18 @@
+# Credenciais — NUNCA versionar
+config.local.json
+
+# Credenciais do Google (OAuth) — NUNCA versionar
+credentials.json
+token.google.json
+
+# Banco de dados local
+dados/*.db
+
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

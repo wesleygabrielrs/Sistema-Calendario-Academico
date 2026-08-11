@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block titulo %}Configurações{% endblock %}
+
+{% block conteudo %}
+<h2>Acesso ao portal</h2>
+<p class="aviso">
+    O portal da UNINASSAU usa login por <strong>link mágico</strong> (sem senha).
+    O e-mail e o token ficam salvos apenas neste computador, num arquivo local
+    (<code>config.local.json</code>) que <strong>não</strong> vai para o GitHub.
+</p>
+
+{% if tem_token %}
+<p class="aviso ok">✓ Acesso configurado! Já pode abrir o <a href="{{ url_for('index') }}">calendário</a>.</p>
+{% endif %}
+
+<div class="etapa">
+    <span class="etapa-num">1</span>
+    <div class="etapa-conteudo">
+        <label>Peça o link mágico no portal</label>
+        <p class="status">
+            Abra o link abaixo em uma nova aba, digite o seu e-mail e peça o acesso.
+            O portal manda o link para o seu Gmail.
+        </p>
+        <div class="linha">
+            <input type="text" value="{{ url_portal }}" readonly>
+            <a class="btn" href="{{ url_portal }}" target="_blank" rel="noopener">Abrir o portal</a>
+        </div>
+    </div>
+</div>
+
+<div class="etapa">
+    <span class="etapa-num">2</span>
+    <div class="etapa-conteudo">
+        <label for="link">Cole aqui o link recebido no Gmail</label>
+        <div class="linha">
+            <input type="text" id="link" placeholder="https://serconnect.sereducacional.com/api/sso?token=...">
+            <button class="btn" id="btn-entrar">Entrar</button>
+        </div>
+        <span id="status-link" class="status"></span>
+    </div>
+</div>
+
+<h2 style="margin-top:28px">Disciplinas para sincronizar</h2>
+<p class="aviso">
+    O portal não expõe uma lista de disciplinas — cada matéria é acessada pelo seu
+    identificador (UUID). Para adicionar: no serconnect, troque de matéria pelo
+    seletor e copie o valor do cookie <code>ubiqua-discipline</code>
+    (F12 → Application → Cookies → serconnect.sereducacional.com). Cole aqui embaixo.
+</p>
+
+<div class="etapa">
+    <span class="etapa-num">＋</span>
+    <div class="etapa-conteudo">
+        <label for="disciplina-uuid">UUID da disciplina</label>
+        <div class="linha">
+            <input type="text" id="disciplina-uuid" placeholder="ex.: 4cda0951-4dae-43bf-afd8-c846321b4cf8">
+            <button class="btn" id="btn-add-disciplina">Adicionar</button>
+        </div>
+        <span id="status-disciplina" class="status"></span>
+        <ul id="lista-disciplinas">
+            {% for d in disciplinas %}
+            <li>
+                <span>{{ d.nome }} <small>({{ d.uuid[:8] }}…)</small></span>
+                <button class="btn-remover" data-uuid="{{ d.uuid }}">✖</button>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<h2 style="margin-top:28px">Google Agenda</h2>
+{% if google_msg == "conectado" %}
+<p class="aviso ok">✓ Google Agenda conectado! A sincronização agora manda seus eventos para a agenda <strong>UNINASSAU</strong>.</p>
+{% endif %}
+
+<div class="etapa">
+    <span class="etapa-num">G</span>
+    <div class="etapa-conteudo">
+        {% if google_conectado %}
+        <p class="status ok">✓ {{ google_mensagem }} — seus eventos já vão para lá.</p>
+        {% elif tem_credentials %}
+        <p class="status">Clique abaixo para autorizar — o navegador abre a tela de login do Google (uma única vez).</p>
+        <div class="linha">
+            <a class="btn" href="{{ url_for('google_autorizar') }}">Conectar Google Agenda</a>
+        </div>
+        {% else %}
+        <p class="status">
+            Ainda não existe o <code>credentials.json</code> nesta pasta. Siga o guia no
+            <strong>README.md</strong> do projeto (criar projeto no Google Cloud, habilitar a
+            Calendar API e baixar o JSON do OAuth) e salve o arquivo aqui.
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+<p class="aviso">
+    💡 <strong>Dica:</strong> o link mágico é de <strong>uso único</strong> e só um fica
+    ativo por vez. Depois de colá-lo aqui, ele fica consumido — se o acesso expirar,
+    basta voltar nesta tela e pedir outro.
+</p>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const statusLink = document.getElementById("status-link");
+    const btnEntrar = document.getElementById("btn-entrar");
+    const statusDisc = document.getElementById("status-disciplina");
+    const btnAdd = document.getElementById("btn-add-disciplina");
+    const lista = document.getElementById("lista-disciplinas");
+    const inputUuid = document.getElementById("disciplina-uuid");
+
+    btnEntrar.addEventListener("click", async function () {
+        const link = document.getElementById("link").value.trim();
+        statusLink.textContent = "Entrando...";
+        statusLink.className = "status";
+        try {
+            const resp = await fetch("/api/completar-link", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({link: link}),
+            });
+            const dados = await resp.json();
+            statusLink.textContent = dados.ok ? "✔ " + dados.mensagem : "✖ " + (dados.erros || []).join(" | ");
+            statusLink.className = dados.ok ? "status ok" : "status erro";
+            if (dados.ok) {
+                setTimeout(function () { window.location.href = "/"; }, 800);
+            }
+        } catch (e) {
+            statusLink.textContent = "✖ Falha ao conectar com o servidor.";
+            statusLink.className = "status erro";
+        }
+    });
+
+    function msg(el, texto, ok) {
+        el.textContent = texto;
+        el.className = ok ? "status ok" : "status erro";
+    }
+
+    btnAdd.addEventListener("click", async function () {
+        const uuid = inputUuid.value.trim();
+        if (!uuid) { msg(statusDisc, "Informe o UUID", false); return; }
+        msg(statusDisc, "Buscando o nome da disciplina...", true);
+        try {
+            const resp = await fetch("/api/disciplinas", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({uuid: uuid}),
+            });
+            const dados = await resp.json();
+            if (dados.ok) {
+                msg(statusDisc, "✔ " + dados.mensagem, true);
+                inputUuid.value = "";
+                window.location.reload();
+            } else {
+                msg(statusDisc, "✖ " + (dados.erros || []).join(" | "), false);
+            }
+        } catch (e) {
+            msg(statusDisc, "✖ Falha ao conectar com o servidor.", false);
+        }
+    });
+
+    lista.addEventListener("click", async function (e) {
+        const btn = e.target.closest(".btn-remover");
+        if (!btn) return;
+        try {
+            await fetch("/api/disciplinas", {
+                method: "DELETE",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({uuid: btn.dataset.uuid}),
+            });
+            window.location.reload();
+        } catch (err) { /* reload anyway */ }
+    });
+});
+</script>
+{% endblock %}

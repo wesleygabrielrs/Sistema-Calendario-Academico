@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo %}Calendário Acadêmico{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header class="topo">
+        <h1>📅 Calendário Acadêmico UNINASSAU</h1>
+        <nav>
+            <a href="{{ url_for('index') }}">Calendário</a>
+            <a href="{{ url_for('config') }}">Configurações</a>
+        </nav>
+    </header>
+    <main class="conteudo">
+        {% block conteudo %}{% endblock %}
+    </main>
+</body>
+</html>

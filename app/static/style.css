@@ -1,0 +1,351 @@
+/* ============================================================
+   Calendario Academico UNINASSAU - estilo
+   Modo claro por padrao, escuro automatico (prefers-color-scheme)
+   ============================================================ */
+
+:root {
+    --fundo: #f4f6fa;
+    --superficie: #ffffff;
+    --texto: #1c2333;
+    --texto-suave: #5a6478;
+    --borda: #dde2ec;
+    --primaria: #1a73e8;
+    --primaria-texto: #ffffff;
+    --ok: #1e8e3e;
+    --erro: #c5221f;
+    --sombra: 0 2px 8px rgba(28, 35, 51, 0.08);
+}
+
+:root:not([data-theme="light"]) {
+    --fundo: #10141d;
+    --superficie: #1a2130;
+    --texto: #e8ecf4;
+    --texto-suave: #9aa5b8;
+    --borda: #2c3648;
+    --primaria: #4d8df0;
+    --primaria-texto: #0b1220;
+    --ok: #57c276;
+    --erro: #ff6b6b;
+    --sombra: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --fundo: #10141d;
+        --superficie: #1a2130;
+        --texto: #e8ecf4;
+        --texto-suave: #9aa5b8;
+        --borda: #2c3648;
+        --primaria: #4d8df0;
+        --primaria-texto: #0b1220;
+        --ok: #57c276;
+        --erro: #ff6b6b;
+        --sombra: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: var(--fundo);
+    color: var(--texto);
+}
+
+/* ---------- Topo ---------- */
+.topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px 22px;
+    background: var(--superficie);
+    border-bottom: 1px solid var(--borda);
+}
+
+.topo h1 {
+    margin: 0;
+    font-size: 1.15rem;
+}
+
+.topo nav {
+    display: flex;
+    gap: 6px;
+}
+
+.topo nav a {
+    color: var(--texto-suave);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.topo nav a:hover {
+    color: var(--primaria);
+    background: var(--fundo);
+}
+
+/* ---------- Conteudo ---------- */
+.conteudo {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px 22px 40px;
+}
+
+.barra-acoes {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+
+.status { font-size: 0.92rem; color: var(--texto-suave); }
+.status.ok   { color: var(--ok); }
+.status.erro { color: var(--erro); }
+
+.btn {
+    background: var(--primaria);
+    color: var(--primaria-texto);
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+.btn:hover { opacity: 0.9; }
+.btn:disabled { opacity: 0.55; cursor: wait; }
+
+/* ---------- Cartoes e lista de proximos eventos ---------- */
+.cartao {
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--sombra);
+    max-width: 640px;
+}
+
+.cartao h2 {
+    margin: 0 0 12px;
+    font-size: 1.05rem;
+}
+
+.cartao-google {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.cartao-google .status { margin: 2px 0; }
+
+.btn-secundario {
+    background: var(--superficie);
+    color: var(--primaria);
+    border: 1px solid var(--primaria);
+}
+
+.btn-secundario:hover { background: color-mix(in srgb, var(--primaria) 8%, transparent); }
+
+.lista-proximos {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.lista-proximos li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--fundo);
+    border: 1px solid var(--borda);
+    border-radius: 10px;
+    padding: 10px 14px;
+}
+
+.prox-data {
+    flex: 0 0 auto;
+    min-width: 128px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--texto);
+}
+
+.prox-cor {
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.prox-titulo {
+    flex: 1;
+    font-size: 0.95rem;
+    line-height: 1.35;
+}
+
+.prox-titulo small {
+    display: block;
+    color: var(--texto-suave);
+    font-size: 0.8rem;
+}
+
+/* ---------- Etapas do acesso (link magico) ---------- */
+.etapa {
+    display: flex;
+    gap: 14px;
+    max-width: 640px;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: var(--sombra);
+}
+
+.etapa-num {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--primaria);
+    color: var(--primaria-texto);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.etapa-conteudo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.etapa-conteudo label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--texto-suave);
+}
+
+.linha {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.linha input {
+    flex: 1;
+    min-width: 220px;
+    padding: 10px 12px;
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    background: var(--fundo);
+    color: var(--texto);
+    font-size: 0.95rem;
+}
+
+.linha input:focus {
+    outline: 2px solid var(--primaria);
+    border-color: transparent;
+}
+
+/* ---------- Formulario de config ---------- */
+.form-config {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 420px;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--sombra);
+}
+
+.form-config label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--texto-suave);
+}
+
+.form-config input {
+    padding: 10px 12px;
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    background: var(--fundo);
+    color: var(--texto);
+    font-size: 0.95rem;
+}
+
+.form-config input:focus {
+    outline: 2px solid var(--primaria);
+    border-color: transparent;
+}
+
+.aviso {
+    max-width: 560px;
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--texto-suave);
+    font-size: 0.92rem;
+}
+
+.aviso code {
+    background: var(--fundo);
+    padding: 1px 6px;
+    border-radius: 6px;
+}
+
+.aviso.ok { color: var(--ok); border-color: var(--ok); }
+
+/* ---------- Lista de disciplinas ---------- */
+#lista-disciplinas {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+#lista-disciplinas li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--fundo);
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.92rem;
+}
+
+#lista-disciplinas small { color: var(--texto-suave); }
+
+.btn-remover {
+    border: none;
+    background: transparent;
+    color: var(--erro);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 6px;
+    border-radius: 6px;
+}
+
+.btn-remover:hover { background: var(--borda); }

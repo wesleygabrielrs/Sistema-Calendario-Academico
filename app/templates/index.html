@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block titulo %}Calendário{% endblock %}
+
+{% block conteudo %}
+<div class="barra-acoes">
+    <button id="btn-sincronizar" class="btn">↻ Sincronizar com o Google Agenda</button>
+    <span id="status" class="status"></span>
+</div>
+
+{% if google_conectado %}
+<div class="cartao cartao-google">
+    <div>
+        <p class="status ok">✓ {{ google_mensagem }}</p>
+        <p class="status">Os eventos aparecem na agenda <strong>UNINASSAU</strong> da sua conta do Google.</p>
+    </div>
+    <a class="btn btn-secundario" href="{{ url_google }}" target="_blank" rel="noopener">Abrir no Google Agenda ↗</a>
+</div>
+{% else %}
+<div class="aviso">
+    <strong>Falta conectar o Google Agenda.</strong> Depois de autorizar uma vez, a
+    sincronização manda seus eventos para a agenda <strong>UNINASSAU</strong> criada na sua conta.
+    <a href="{{ url_for('google_autorizar') }}">Conectar agora →</a>
+</div>
+{% endif %}
+
+<div class="cartao">
+    <h2>Próximos eventos</h2>
+    {% if proximos %}
+    <ul id="lista-proximos" class="lista-proximos">
+        {% for e in proximos %}
+        <li>
+            <span class="prox-data">{{ e.data_texto }}</span>
+            <span class="prox-cor" style="background: {{ e.cor }}"></span>
+            <span class="prox-titulo">
+                {{ e.materia }} — {{ e.titulo }}
+                {% if e.tipo %}<small>{{ e.tipo }}</small>{% endif %}
+            </span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p id="lista-proximos" class="status">Nenhum evento nos próximos dias. Clique em
+        <strong>Sincronizar</strong> para buscar os dados no portal.</p>
+    {% endif %}
+</div>
+
+<p class="aviso">
+    💡 <strong>Dica:</strong> sincronize sempre que quiser atualizar — a sincronização é
+    <strong>sem duplicar</strong>: eventos que mudaram são atualizados e os que sumiram do
+    portal são removidos da agenda.
+</p>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const btn = document.getElementById("btn-sincronizar");
+    const statusEl = document.getElementById("status");
+    if (!btn) return;
+
+    // Escapa texto vindo do portal para montar a lista com segurança.
+    function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+    }
+
+    function renderProximos(lista) {
+        const box = document.getElementById("lista-proximos");
+        if (!box) return;
+        if (!lista.length) {
+            box.className = "status";
+            box.innerHTML = "Nenhum evento nos próximos dias.";
+            return;
+        }
+        box.className = "lista-proximos";
+        box.innerHTML = lista.map(function (e) {
+            return (
+                "<li>" +
+                '<span class="prox-data">' + esc(e.data_texto) + "</span>" +
+                '<span class="prox-cor" style="background:' + esc(e.cor) + '"></span>' +
+                '<span class="prox-titulo">' +
+                    esc(e.materia) + " — " + esc(e.titulo) +
+                    (e.tipo ? " <small>" + esc(e.tipo) + "</small>" : "") +
+                "</span>" +
+                "</li>"
+            );
+        }).join("");
+    }
+
+    btn.addEventListener("click", async function () {
+        btn.disabled = true;
+        btn.textContent = "Sincronizando...";
+        statusEl.textContent = "Buscando dados no portal...";
+        statusEl.className = "status";
+
+        try {
+            const resp = await fetch("/api/sincronizar", { method: "POST" });
+            const dados = await resp.json();
+
+            if (dados.ok) {
+                const r = dados.resumo || {};
+                let texto = "✔ " + r.materias + " matérias e " + r.atividades + " atividades.";
+                const g = dados.google;
+                if (g && g.ok) {
+                    const d = g.detalhes || {};
+                    texto += " Google Agenda: " + d.criados + " criados, " + d.atualizados + " atualizados" +
+                        (d.removidos ? ", " + d.removidos + " removidos" : "") + ".";
+                } else if (g) {
+                    texto += " ⚠ " + (g.mensagem || "Google Agenda não sincronizou.");
+                }
+                statusEl.textContent = texto;
+                statusEl.className = "status ok";
+                try {
+                    const prox = await fetch("/api/proximos");
+                    renderProximos(await prox.json());
+                } catch (e) { /* lista fica como está */ }
+            } else {
+                const erros = (dados.erros || ["Erro desconhecido"]).join(" | ");
+                statusEl.textContent = "✖ " + erros;
+                statusEl.className = "status erro";
+            }
+        } catch (erro) {
+            statusEl.textContent = "✖ Falha ao conectar com o servidor.";
+            statusEl.className = "status erro";
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "↻ Sincronizar com o Google Agenda";
+        }
+    });
+});
+</script>
+{% endblock %}
